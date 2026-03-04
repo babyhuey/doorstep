@@ -20,6 +20,10 @@ env/
 .cache
 .cache-*
 
+# YouTube OAuth credentials (never commit these)
+client_secrets.json
+.youtube_token.json
+
 # IDE
 .idea/
 .vscode/

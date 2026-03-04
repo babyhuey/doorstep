@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 26.1.0
+    hooks:
+      - id: black
+
+  - repo: local
+    hooks:
+      - id: grype
+        name: grype
+        entry: bash -c 'curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b ~/.local/bin 2>/dev/null; ~/.local/bin/grype . --fail-on medium'
+        language: system
+        pass_filenames: false
+        always_run: true
