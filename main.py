@@ -110,14 +110,20 @@ def main():
     urls: dict[str, str] = {}
 
     if "spotify" in platforms:
-        url = build_playlist(artist_names, playlist_name)
-        if url:
-            urls["Spotify"] = url
+        try:
+            url = build_playlist(artist_names, playlist_name)
+            if url:
+                urls["Spotify"] = url
+        except Exception as e:
+            print(f"[Spotify error] {e}")
 
     if "youtube" in platforms:
-        url = build_youtube_playlist(artist_names, playlist_name)
-        if url:
-            urls["YouTube"] = url
+        try:
+            url = build_youtube_playlist(artist_names, playlist_name)
+            if url:
+                urls["YouTube"] = url
+        except Exception as e:
+            print(f"[YouTube error] {e}")
 
     if urls:
         print("\nPlaylists ready:")
