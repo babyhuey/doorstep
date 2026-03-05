@@ -4,14 +4,4 @@ repos:
     hooks:
       - id: black
 
-  - repo: local
-    hooks:
-      - id: grype
-        name: grype
-        # Requires grype to be installed: https://github.com/anchore/grype#installation
-        # brew install anchore/grype/grype  OR  curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
-        entry: grype
-        language: system
-        args: [".", "--fail-on", "medium"]
-        pass_filenames: false
-        always_run: true
+  # Dependency vulnerability scanning is handled by Dependabot (GitHub-native, no local binary needed)

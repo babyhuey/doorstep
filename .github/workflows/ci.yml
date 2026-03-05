@@ -23,16 +23,4 @@ jobs:
       - name: Check formatting
         run: black --check .
 
-  security:
-    name: Grype
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Scan for vulnerabilities
-        # Pinned to v6.0.0 — update SHA when upgrading
-        uses: anchore/scan-action@abae793926ec39a78ab18002bc7fc45bbbd94342
-        with:
-          path: "."
-          fail-build: true
-          severity-cutoff: medium
+  # Dependency vulnerability scanning is handled by Dependabot (see .github/dependabot.yml)
