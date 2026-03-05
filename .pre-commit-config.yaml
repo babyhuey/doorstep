@@ -8,7 +8,10 @@ repos:
     hooks:
       - id: grype
         name: grype
-        entry: bash -c 'curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b ~/.local/bin 2>/dev/null; ~/.local/bin/grype . --fail-on medium'
+        # Requires grype to be installed: https://github.com/anchore/grype#installation
+        # brew install anchore/grype/grype  OR  curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
+        entry: grype
         language: system
+        args: [".", "--fail-on", "medium"]
         pass_filenames: false
         always_run: true
