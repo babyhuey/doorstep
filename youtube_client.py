@@ -1,12 +1,15 @@
-import json
+import os
+import stat
 from pathlib import Path
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
-_SCOPES = ["https://www.googleapis.com/auth/youtube"]
+# Minimal scope: HTTPS-enforced playlist read/write; does not grant full account management
+_SCOPES = ["https://www.googleapis.com/auth/youtube.force-ssl"]
 _TOKEN_FILE = Path(__file__).parent / ".youtube_token.json"
 _SECRETS_FILE = Path(__file__).parent / "client_secrets.json"
 
@@ -36,22 +39,33 @@ class YouTubeClient:
                     str(_SECRETS_FILE), _SCOPES
                 )
                 credentials = flow.run_local_server(port=0)
-            _TOKEN_FILE.write_text(credentials.to_json())
+
+            # Write token with owner-only permissions (0600)
+            token_json = credentials.to_json()
+            fd = os.open(str(_TOKEN_FILE), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            try:
+                os.write(fd, token_json.encode())
+            finally:
+                os.close(fd)
 
         self.youtube = build("youtube", "v3", credentials=credentials)
 
-    def search_videos(self, artist: str, n: int = 3) -> list[str]:
-        response = (
-            self.youtube.search()
-            .list(
-                part="id",
-                q=f"{artist} official audio",
-                type="video",
-                maxResults=n,
+    def search_videos(self, artist: str, n: int = 2) -> list[str]:
+        try:
+            response = (
+                self.youtube.search()
+                .list(
+                    part="id",
+                    q=f"{artist} official audio",
+                    type="video",
+                    maxResults=n,
+                )
+                .execute()
             )
-            .execute()
-        )
-        return [item["id"]["videoId"] for item in response.get("items", [])]
+            return [item["id"]["videoId"] for item in response.get("items", [])]
+        except HttpError as e:
+            print(f"  [warning] YouTube search failed for {artist!r}: {e}")
+            return []
 
     def find_playlist(self, name: str) -> str | None:
         """Find an existing playlist by exact title. Returns playlist ID or None."""
@@ -111,8 +125,9 @@ class YouTubeClient:
             .insert(
                 part="snippet,status",
                 body={
-                    "snippet": {"title": name, "description": description},
-                    "status": {"privacyStatus": "public"},
+                    # YouTube enforces a 150-char title limit
+                    "snippet": {"title": name[:150], "description": description},
+                    "status": {"privacyStatus": "private"},
                 },
             )
             .execute()
@@ -120,13 +135,25 @@ class YouTubeClient:
         return response["id"]
 
     def add_videos(self, playlist_id: str, video_ids: list[str]) -> None:
+        failed = 0
         for video_id in video_ids:
-            self.youtube.playlistItems().insert(
-                part="snippet",
-                body={
-                    "snippet": {
-                        "playlistId": playlist_id,
-                        "resourceId": {"kind": "youtube#video", "videoId": video_id},
-                    }
-                },
-            ).execute()
+            try:
+                self.youtube.playlistItems().insert(
+                    part="snippet",
+                    body={
+                        "snippet": {
+                            "playlistId": playlist_id,
+                            "resourceId": {
+                                "kind": "youtube#video",
+                                "videoId": video_id,
+                            },
+                        }
+                    },
+                ).execute()
+            except HttpError as e:
+                failed += 1
+                print(f"  [warning] Could not add video {video_id}: {e}")
+        if failed:
+            print(
+                f"  [warning] {failed} video(s) could not be added (region-locked or removed)."
+            )

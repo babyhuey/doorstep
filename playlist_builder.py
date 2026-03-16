@@ -55,7 +55,13 @@ def build_playlist(
     else:
         print(f"Creating new Spotify playlist: {playlist_name}")
         playlist_id = client.create_playlist(playlist_name, description)
-        client.add_tracks(playlist_id, track_uris)
+        try:
+            client.add_tracks(playlist_id, track_uris)
+        except Exception as e:
+            print(f"[error] Failed to add tracks to Spotify playlist: {e}")
+            print("[error] Cleaning up empty playlist...")
+            client.delete_playlist(playlist_id)
+            return None, not_found
 
         print("\nPlaylist summary:")
         for entry in found:

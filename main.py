@@ -111,16 +111,22 @@ def main():
     all_not_found: set[str] = set()
 
     if "spotify" in platforms:
-        url, not_found = build_playlist(artist_names, playlist_name)
-        if url:
-            urls["Spotify"] = url
-        all_not_found.update(not_found)
+        try:
+            url, not_found = build_playlist(artist_names, playlist_name)
+            if url:
+                urls["Spotify"] = url
+            all_not_found.update(not_found)
+        except Exception as e:
+            print(f"[Spotify error] {e}")
 
     if "youtube" in platforms:
-        url, not_found = build_youtube_playlist(artist_names, playlist_name)
-        if url:
-            urls["YouTube"] = url
-        all_not_found.update(not_found)
+        try:
+            url, not_found = build_youtube_playlist(artist_names, playlist_name)
+            if url:
+                urls["YouTube"] = url
+            all_not_found.update(not_found)
+        except Exception as e:
+            print(f"[YouTube error] {e}")
 
     if urls:
         print("\nPlaylists ready:")
