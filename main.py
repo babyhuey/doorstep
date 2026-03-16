@@ -108,20 +108,23 @@ def main():
 
     print("\nBuilding playlist(s)...\n")
     urls: dict[str, str] = {}
+    all_not_found: set[str] = set()
 
     if "spotify" in platforms:
         try:
-            url = build_playlist(artist_names, playlist_name)
+            url, not_found = build_playlist(artist_names, playlist_name)
             if url:
                 urls["Spotify"] = url
+            all_not_found.update(not_found)
         except Exception as e:
             print(f"[Spotify error] {e}")
 
     if "youtube" in platforms:
         try:
-            url = build_youtube_playlist(artist_names, playlist_name)
+            url, not_found = build_youtube_playlist(artist_names, playlist_name)
             if url:
                 urls["YouTube"] = url
+            all_not_found.update(not_found)
         except Exception as e:
             print(f"[YouTube error] {e}")
 
@@ -129,6 +132,11 @@ def main():
         print("\nPlaylists ready:")
         for platform, url in urls.items():
             print(f"  {platform}: {url}")
+
+    if all_not_found:
+        print(f"\nArtists not found on any platform ({len(all_not_found)}):")
+        for name in sorted(all_not_found):
+            print(f"  - {name}")
 
 
 if __name__ == "__main__":

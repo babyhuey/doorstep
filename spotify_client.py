@@ -49,12 +49,52 @@ class SpotifyClient:
             print(f"  [warning] Could not fetch top tracks: {e}")
             return []
 
+    def find_playlist(self, name: str) -> str | None:
+        """Find an existing playlist by exact name. Returns playlist ID or None."""
+        offset = 0
+        while True:
+            results = self.sp.current_user_playlists(limit=50, offset=offset)
+            for item in results["items"]:
+                if item["name"] == name and item["owner"]["id"] == self.user_id:
+                    return item["id"]
+            if results["next"] is None:
+                return None
+            offset += 50
+
     def create_playlist(self, name: str, description: str = "") -> str:
         # Spotify enforces a 100-char title limit
         playlist = self.sp.user_playlist_create(
             self.user_id, name[:100], public=False, description=description
         )
         return playlist["id"]
+
+    def get_playlist_artists(self, playlist_id: str) -> set[str]:
+        """Return the set of artist names currently in a playlist (lowercased)."""
+        artists: set[str] = set()
+        offset = 0
+        while True:
+            results = self.sp.playlist_items(
+                playlist_id,
+                fields="items.track.artists.name,next",
+                limit=100,
+                offset=offset,
+            )
+            for item in results.get("items", []):
+                track = item.get("track")
+                if track:
+                    for artist in track.get("artists", []):
+                        artists.add(artist["name"].lower())
+            if results.get("next") is None:
+                break
+            offset += 100
+        return artists
+
+    def replace_tracks(self, playlist_id: str, track_uris: list[str]) -> None:
+        """Replace all tracks in a playlist."""
+        # First batch via replace (clears existing), rest via add
+        self.sp.playlist_replace_items(playlist_id, track_uris[:100])
+        for i in range(100, len(track_uris), 100):
+            self.sp.playlist_add_items(playlist_id, track_uris[i : i + 100])
 
     def delete_playlist(self, playlist_id: str) -> None:
         try:

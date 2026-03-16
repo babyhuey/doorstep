@@ -67,6 +67,58 @@ class YouTubeClient:
             print(f"  [warning] YouTube search failed for {artist!r}: {e}")
             return []
 
+    def find_playlist(self, name: str) -> str | None:
+        """Find an existing playlist by exact title. Returns playlist ID or None."""
+        page_token = None
+        while True:
+            response = (
+                self.youtube.playlists()
+                .list(part="snippet", mine=True, maxResults=50, pageToken=page_token)
+                .execute()
+            )
+            for item in response.get("items", []):
+                if item["snippet"]["title"] == name:
+                    return item["id"]
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                return None
+
+    def get_playlist_video_titles(self, playlist_id: str) -> list[str]:
+        """Return the list of video titles currently in a playlist."""
+        titles: list[str] = []
+        page_token = None
+        while True:
+            response = (
+                self.youtube.playlistItems()
+                .list(
+                    part="snippet",
+                    playlistId=playlist_id,
+                    maxResults=50,
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+            for item in response.get("items", []):
+                titles.append(item["snippet"]["title"])
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+        return titles
+
+    def clear_playlist(self, playlist_id: str) -> None:
+        """Remove all items from a playlist."""
+        while True:
+            response = (
+                self.youtube.playlistItems()
+                .list(part="id", playlistId=playlist_id, maxResults=50)
+                .execute()
+            )
+            items = response.get("items", [])
+            if not items:
+                break
+            for item in items:
+                self.youtube.playlistItems().delete(id=item["id"]).execute()
+
     def create_playlist(self, name: str, description: str = "") -> str:
         response = (
             self.youtube.playlists()
