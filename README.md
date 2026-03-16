@@ -8,14 +8,17 @@ Paste a venue's event page URL and doorstep automatically builds you a playlist 
 2. A headless browser renders the page so JavaScript-loaded content is visible
 3. Claude reads the page and extracts artist names + show dates
 4. Shows are filtered to the month you choose (this month or next)
-5. Top tracks are pulled for each artist and added to a new playlist
+5. Top tracks are pulled for each artist and added to a playlist (or an existing one is updated)
 
 ## Features
 
 - **Venue page parsing** — works on any site, including JS-heavy ones, via Playwright
 - **Smart date filtering** — pick this month or next month; duplicate artists are removed automatically
+- **Multi-artist splitting** — entries like `Artist A / Artist B` are split into individual artists
+- **Playlist updates** — re-running with the same venue/month updates the existing playlist and shows what changed (added/removed artists)
+- **Not-found report** — artists that couldn't be found on any platform are listed at the end
 - **Multi-platform** — create playlists on Spotify, YouTube, or both at once
-- **Auto-named playlists** — named from the venue and month, e.g. `Motorco Music Hall — March 2026`
+- **Auto-named playlists** — named from the page title and month, e.g. `Motorco Music Hall — March 2026`
 - **CLI shortcut** — pass a URL directly: `python main.py motorcomusic.com`
 - **Manual mode** — type artist names yourself if you don't have a URL
 
@@ -108,11 +111,6 @@ Playlists ready:
 
 ## CI
 
-Every push runs two GitHub Actions checks:
+Every push runs a [Black](https://github.com/psf/black) formatting check via GitHub Actions. Dependency vulnerability scanning is handled by [Dependabot](https://docs.github.com/en/code-security/dependabot), which opens PRs automatically for outdated or vulnerable packages.
 
-| Check | Tool | What it does |
-|-------|------|-------------|
-| Formatting | [Black](https://github.com/psf/black) | Fails if any file isn't formatted |
-| Security | [Grype](https://github.com/anchore/grype) | Scans dependencies for CVEs (medium+) |
-
-The same checks run locally on every `git commit` via pre-commit.
+Black also runs locally on every `git commit` via pre-commit.
